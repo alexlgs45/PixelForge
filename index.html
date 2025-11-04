@@ -1,70 +1,428 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Pixel Forge - Crée ton mod Minecraft</title>
-  <style>
-    body {
-      background: #1e1e1e;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 30px;
-    }
-
-    h1 {
-      color: #f39c12;
-      text-shadow: 2px 2px 5px #000;
-    }
-
-    textarea {
-      width: 80%;
-      height: 300px;
-      margin-top: 20px;
-      background: #2b2b2b;
-      color: #fff;
-      border: 2px solid #f39c12;
-      border-radius: 10px;
-      padding: 10px;
-      font-family: monospace;
-      font-size: 14px;
-      resize: none;
-    }
-
-    button {
-      margin-top: 20px;
-      padding: 15px 30px;
-      font-size: 1.1em;
-      border: none;
-      border-radius: 10px;
-      background-color: #27ae60;
-      color: white;
-      cursor: pointer;
-      transition: transform 0.2s, background 0.2s;
-    }
-
-    button:hover {
-      background-color: #2ecc71;
-      transform: scale(1.05);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Créateur de Mods Minecraft</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
-<body>
-  <h1>Pixel Forge - Crée ton mod Minecraft</h1>
-  <p>Écris ton code ci-dessous puis télécharge-le pour l’utiliser comme base de mod.</p>
-
-  <textarea id="modCode" placeholder="// Écris ton code ici..."></textarea><br>
-  <button onclick="downloadMod()">Télécharger le mod</button>
-
-  <script>
-    function downloadMod() {
-      const code = document.getElementById('modCode').value;
-      const blob = new Blob([code], { type: 'text/plain' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'mon_mod.txt'; // Tu peux changer en .json si tu veux
-      link.click();
-    }
-  </script>
+<body class="home-page">
+    <div class="hero">
+        <h1>Crée et importe tes mods Minecraft facilement</h1>
+        <p>
+            Bienvenue sur le créateur de mods ultime pour Minecraft.
+            Code en Python, importe depuis ta clé USB ou Internet,
+            et personnalise ton expérience de jeu comme jamais !
+        </p>
+        <div class="cta-buttons">
+            <a href="editor.html" class="btn">Coder un mod <i class="fas fa-code"></i></a>
+            <a href="import.html" class="btn">Importer un mod <i class="fas fa-upload"></i></a>
+        </div>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Éditeur de Code - Mods Minecraft</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="editor-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+</head>
+<body>
+    <div class="sidebar">
+        <button class="sidebar-btn active" onclick="loadPage('editor')">
+            <i class="fas fa-code"></i> Code
+        </button>
+        <button class="sidebar-btn" onclick="window.location.href='import.html'">
+            <i class="fas fa-upload"></i> Importer
+        </button>
+    </div>
+    <div class="main-content">
+        <h1>Éditeur de Code Python</h1>
+        <div class="editor-container">
+            <textarea id="codeEditor"></textarea>
+        </div>
+        <div class="editor-actions">
+            <button id="saveCode" class="btn"><i class="fas fa-save"></i> Sauvegarder</button>
+            <button id="downloadCode" class="btn"><i class="fas fa-download"></i> Télécharger</button>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="script.js"></script>
+    <script src="editor-script.js"></script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importer un Mod - Minecraft</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="import-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="sidebar">
+        <button class="sidebar-btn" onclick="window.location.href='editor.html'">
+            <i class="fas fa-code"></i> Code
+        </button>
+        <button class="sidebar-btn active" onclick="loadPage('import')">
+            <i class="fas fa-upload"></i> Importer
+        </button>
+    </div>
+    <div class="main-content">
+        <h1>Importer un Mod</h1>
+        <div class="import-container">
+            <div class="upload-area" id="dropArea">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Glisse-dépose un fichier ici ou clique pour parcourir</p>
+                <input type="file" id="fileInput" accept=".py,.jar,.zip">
+            </div>
+            <div id="filePreview" class="file-preview hidden">
+                <h3>Fichier sélectionné : <span id="fileName"></span></h3>
+                <p>Taille : <span id="fileSize"></span></p>
+                <div id="fileContent" class="preview-content"></div>
+                <button id="importBtn" class="btn"><i class="fas fa-check"></i> Valider l'importation</button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+    <script src="import-script.js"></script>
+</body>
+</html>
+/* Styles communs */
+:root {
+    --primary: #6c5ce7;
+    --secondary: #a29bfe;
+    --dark: #2d3436;
+    --light: #f5f6fa;
+    --success: #00b894;
+    --danger: #d63031;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, var(--dark), #636e72);
+    color: var(--light);
+    min-height: 100vh;
+}
+
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 250px;
+    height: 100vh;
+    background: #2d3436;
+    padding: 20px 0;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+}
+
+.sidebar-btn {
+    display: block;
+    width: 80%;
+    margin: 10px auto;
+    padding: 12px;
+    background: transparent;
+    color: var(--light);
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: left;
+    padding-left: 20px;
+}
+
+.sidebar-btn i {
+    margin-right: 10px;
+}
+
+.sidebar-btn:hover, .sidebar-btn.active {
+    background: var(--primary);
+    color: white;
+}
+
+.main-content {
+    margin-left: 270px;
+    padding: 20px;
+}
+
+.btn {
+    padding: 10px 15px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+    margin-right: 10px;
+}
+
+.btn:hover {
+    background: #5649d1;
+}
+
+.btn i {
+    margin-right: 5px;
+}
+
+/* Page d'accueil */
+.home-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 0 20px;
+}
+
+.hero {
+    max-width: 800px;
+}
+
+.hero h1 {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+}
+
+.hero p {
+    font-size: 1.2em;
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+
+.cta-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.cta-buttons .btn {
+    padding: 12px 25px;
+    font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        padding: 10px;
+    }
+
+    .sidebar-btn {
+        width: 45%;
+        margin: 0 5px;
+    }
+
+    .main-content {
+        margin-left: 0;
+        margin-top: 20px;
+    }
+}
+.editor-container {
+    background: #282a36;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 20px 0;
+    height: 60vh;
+    overflow: hidden;
+}
+
+.CodeMirror {
+    height: 100%;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.editor-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+.import-container {
+    background: #282a36;
+    border-radius: 5px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.upload-area {
+    border: 2px dashed var(--secondary);
+    border-radius: 5px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.upload-area:hover {
+    border-color: var(--primary);
+}
+
+.upload-area i {
+    font-size: 50px;
+    margin-bottom: 10px;
+}
+
+#fileInput {
+    display: none;
+}
+
+.file-preview {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+}
+
+.preview-content {
+    max-height: 200px;
+    overflow-y: auto;
+    background: #1e1f29;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.hidden {
+    display: none;
+}
+// Navigation entre les pages
+function loadPage(page) {
+    const buttons = document.querySelectorAll('.sidebar-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+// Gestion du glissé-déposé pour l'importation
+document.addEventListener('DOMContentLoaded', () => {
+    const dropArea = document.getElementById('dropArea');
+    const fileInput = document.getElementById('fileInput');
+
+    if (dropArea) {
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropArea.style.borderColor = '#6c5ce7';
+        }
+
+        function unhighlight() {
+            dropArea.style.borderColor = '#a29bfe';
+        }
+
+        dropArea.addEventListener('drop', handleDrop, false);
+        fileInput.addEventListener('change', handleFiles);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles({ target: { files } });
+        }
+
+        function handleFiles(e) {
+            const files = e.target.files;
+            displayFileInfo(files[0]);
+        }
+    }
+});
+
+function displayFileInfo(file) {
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const filePreview = document.getElementById('filePreview');
+    const fileContent = document.getElementById('fileContent');
+
+    fileName.textContent = file.name;
+    fileSize.textContent = formatFileSize(file.size);
+    filePreview.classList.remove('hidden');
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        fileContent.textContent = e.target.result.substring(0, 1000) + (e.target.result.length > 1000 ? '...' : '');
+    };
+    reader.readAsText(file);
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' octets';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' Ko';
+    else return (bytes / 1048576).toFixed(2) + ' Mo';
+}
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialisation de l'éditeur CodeMirror
+    const editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+        mode: 'python',
+        theme: 'dracula',
+        lineNumbers: true,
+        autoIndent: true,
+        indentUnit: 4,
+        tabSize: 4,
+    });
+
+    // Sauvegarder le code
+    document.getElementById('saveCode').addEventListener('click', () => {
+        const code = editor.getValue();
+        localStorage.setItem('minecraftModCode', code);
+        alert('Code sauvegardé localement !');
+    });
+
+    // Télécharger le code
+    document.getElementById('downloadCode').addEventListener('click', () => {
+        const code = editor.getValue();
+        const blob = new Blob([code], { type: 'text/x-python' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'mon_mod_minecraft.py';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    // Charger le code sauvegardé
+    const savedCode = localStorage.getItem('minecraftModCode');
+    if (savedCode) {
+        editor.setValue(savedCode);
+    }
+});
+document.addEventListener('DOMContentLoaded', () => {
+    const importBtn = document.getElementById('importBtn');
+    if (importBtn) {
+        importBtn.addEventListener('click', () => {
+            alert('Fichier importé avec succès ! (Simulé)');
+            // Ici, tu pourrais ajouter la logique pour traiter le fichier importé
+        });
+    }
+});
