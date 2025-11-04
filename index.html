@@ -2,78 +2,69 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Pixel Forge - Mods Minecraft</title>
+  <title>Pixel Forge - Crée ton mod Minecraft</title>
   <style>
-    /* Style général de la page */
     body {
-      background: linear-gradient(to bottom, #1e1e1e, #2b2b2b);
+      background: #1e1e1e;
       color: #fff;
-      font-family: 'Arial', sans-serif;
+      font-family: Arial, sans-serif;
       text-align: center;
-      padding: 50px;
+      padding: 30px;
     }
 
     h1 {
-      font-size: 3em;
-      margin-bottom: 20px;
       color: #f39c12;
       text-shadow: 2px 2px 5px #000;
     }
 
-    p {
-      font-size: 1.2em;
-      margin-bottom: 40px;
-      color: #ddd;
+    textarea {
+      width: 80%;
+      height: 300px;
+      margin-top: 20px;
+      background: #2b2b2b;
+      color: #fff;
+      border: 2px solid #f39c12;
+      border-radius: 10px;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 14px;
+      resize: none;
     }
 
-    /* Boutons stylés */
-    .btn {
+    button {
+      margin-top: 20px;
       padding: 15px 30px;
-      margin: 10px;
       font-size: 1.1em;
       border: none;
       border-radius: 10px;
+      background-color: #27ae60;
+      color: white;
       cursor: pointer;
       transition: transform 0.2s, background 0.2s;
     }
 
-    .btn-download {
-      background-color: #27ae60;
-      color: white;
-    }
-
-    .btn-download:hover {
+    button:hover {
       background-color: #2ecc71;
-      transform: scale(1.1);
-    }
-
-    .btn-gallery {
-      background-color: #2980b9;
-      color: white;
-    }
-
-    .btn-gallery:hover {
-      background-color: #3498db;
-      transform: scale(1.1);
-    }
-
-    /* Footer */
-    footer {
-      margin-top: 60px;
-      font-size: 0.9em;
-      color: #888;
+      transform: scale(1.05);
     }
   </style>
 </head>
 <body>
-  <h1>Pixel Forge</h1>
-  <p>Bienvenue sur votre plateforme de mods Minecraft ! Glissez vos fichiers .jar pour les installer facilement.</p>
+  <h1>Pixel Forge - Crée ton mod Minecraft</h1>
+  <p>Écris ton code ci-dessous puis télécharge-le pour l’utiliser comme base de mod.</p>
 
-  <button class="btn btn-download" onclick="alert('Téléchargement du mod en préparation !')">Télécharger le mod</button>
-  <button class="btn btn-gallery" onclick="alert('Galerie des mods bientôt disponible !')">Voir la galerie</button>
+  <textarea id="modCode" placeholder="// Écris ton code ici..."></textarea><br>
+  <button onclick="downloadMod()">Télécharger le mod</button>
 
-  <footer>
-    &copy; 2025 Pixel Forge. Tous droits réservés.
-  </footer>
+  <script>
+    function downloadMod() {
+      const code = document.getElementById('modCode').value;
+      const blob = new Blob([code], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'mon_mod.txt'; // Tu peux changer en .json si tu veux
+      link.click();
+    }
+  </script>
 </body>
 </html>
