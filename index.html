@@ -715,7 +715,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- Dans import.html, ajoutez ceci dans le main-content, après filePreview -->
 <div id="validationReport" class="validation-report hidden"></div>
 .validation-report {
-    margin-top: 20px;
+    margin-top: 20px
     padding: 15px;
     background: rgba(0, 0, 0, 0.3);
     border-radius: 5px;
@@ -953,32 +953,7 @@ function compileWithGradle() { ... }
 app.listen(port, () => {
     console.log(`Serveur démarré sur http://localhost:${port}`);
 });
-<div class="sidebar">
-    <button class="sidebar-btn" onclick="loadPage('editor')">
-        <i class="fas fa-code"></i> Code
-    </button>
-    <button class="sidebar-btn" onclick="loadPage('import')">
-        <i class="fas fa-upload"></i> Importer
-    </button>
-    <!-- NOUVEAU BOUTON -->
-    <button class="sidebar-btn" id="openPythonEditorBtn">
-        <i class="fas fa-file-code"></i> Éditeur Python
-    </button>
-</div>
-<!-- Conteneur pour l'éditeur Python (masqué par défaut) -->
-<div id="pythonEditorContainer" class="python-editor-container hidden">
-    <div class="python-editor-header">
-        <h2>Éditeur Python <span class="close-editor" onclick="closePythonEditor()">&times;</span></h2>
-    </div>
-    <div class="python-editor-body">
-        <textarea id="pythonEditor"></textarea>
-    </div>
-    <div class="python-editor-actions">
-        <button id="savePythonCode" class="btn"><i class="fas fa-save"></i> Sauvegarder</button>
-        <button id="compilePythonCode" class="btn"><i class="fas fa-cogs"></i> Compiler en .jar</button>
-        <button id="closePythonEditor" class="btn"><i class="fas fa-times"></i> Fermer</button>
-    </div>
-</div>
+
 /* Éditeur Python flottant */
 .python-editor-container {
     position: fixed;
@@ -1130,3 +1105,324 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+e-plan stylé */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+    color: var(--light);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Effet de particules (optionnel) */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        radial-gradient(circle at 10% 20%, rgba(100, 255, 218, 0.1) 0.5px, transparent 1px),
+        radial-gradient(circle at 90% 80%, rgba(255, 100, 218, 0.1) 0.5px, transparent 1px),
+        radial-gradient(circle at 50% 50%, rgba(218, 100, 255, 0.1) 0.3px, transparent 1px);
+    z-index: -1;
+}
+
+/* Conteneur principal pour les pages */
+.page-container {
+    display: none; /* Toutes les pages sont masquées par défaut */
+    margin-left: 270px;
+    padding: 20px;
+    width: calc(100% - 270px);
+    transition: opacity 0.3s;
+}
+
+.page-container.active {
+    display: block; /* Seule la page active est visible */
+}
+
+/* Animation pour les transitions */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.page-container.active {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Style pour la barre latérale */
+.sidebar-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.sidebar-btn::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(-100%);
+    transition: transform 0.3s;
+}
+
+.sidebar-btn:hover::after,
+.sidebar-btn.active::after {
+    transform: translateX(0);
+}
+
+/* Style pour l'éditeur Python flottant */
+.python-editor-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 800px;
+    background: rgba(40, 42, 54, 0.95);
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    display: none;
+    backdrop-filter: blur(10px);
+}
+
+.python-editor-container.active {
+    display: block;
+}
+
+/* Overlay pour l'éditeur Python */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 999;
+    display: none;
+}
+
+.overlay.active {
+    display: block;
+}
+
+// Gestion des pages (Code/Importer)
+function showPage(pageName) {
+    // Masquer toutes les pages
+    document.querySelectorAll('.page-container').forEach(container => {
+        container.classList.remove('active');
+    });
+
+    // Afficher la page demandée
+    const page = document.getElementById(pageName);
+    if (page) {
+        page.classList.add('active');
+    }
+
+    // Mettre à jour les boutons actifs
+    document.querySelectorAll('.sidebar-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.onclick.toString().includes(`showPage('${pageName}')`)) {
+            btn.classList.add('active');
+        }
+    });
+}
+
+// Gestion de l'éditeur Python flottant
+function openPythonEditor() {
+    document.getElementById('overlay').classList.add('active');
+    document.getElementById('pythonEditorContainer').classList.add('active');
+
+    // Initialiser CodeMirror si ce n'est pas déjà fait
+    if (!window.pythonEditor) {
+        window.pythonEditor = CodeMirror.fromTextArea(
+            document.getElementById('pythonEditor'), {
+                mode: 'python',
+                theme: 'dracula',
+                lineNumbers: true,
+                autoIndent: true,
+                indentUnit: 4,
+                tabSize: 4,
+            }
+        );
+    }
+
+    // Charger le code sauvegardé
+    const savedCode = localStorage.getItem('pythonModCode');
+    if (savedCode) {
+        window.pythonEditor.setValue(savedCode);
+    }
+}
+
+function closePythonEditor() {
+    document.getElementById('overlay').classList.remove('active');
+    document.getElementById('pythonEditorContainer').classList.remove('active');
+}
+
+// Sauvegarder le code Python
+function savePythonCode() {
+    const code = window.pythonEditor.getValue();
+    localStorage.setItem('pythonModCode', code);
+    alert('Code Python sauvegardé !');
+}
+
+// Compiler le code Python
+async function compilePythonCode() {
+    const code = window.pythonEditor.getValue();
+    if (!code.trim()) {
+        alert("Veuillez écrire du code avant de compiler.");
+        return;
+    }
+
+    try {
+        const response = await fetch('http://localhost:3000/compile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code }),
+        });
+
+        if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'mon_mod_1.21.10.jar';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        alert("Mod compilé et téléchargé avec succès !");
+    } catch (error) {
+        alert(`Erreur: ${error.message}`);
+    }
+}
+
+// Initialisation au chargement de la page
+document.addEventListener('DOMContentLoaded', () => {
+    // Gestion des boutons de la barre latérale
+    document.querySelectorAll('.sidebar-btn').forEach(btn => {
+        if (btn.onclick.toString().includes('showPage')) {
+            btn.addEventListener('click', () => {
+                const pageName = btn.onclick.toString().match(/showPage\('([^']+)'\)/)[1];
+                showPage(pageName);
+            });
+        }
+    });
+
+    // Bouton pour fermer l'éditeur Python
+    document.getElementById('closePythonEditor')?.addEventListener('click', closePythonEditor);
+    document.getElementById('overlay')?.addEventListener('click', closePythonEditor);
+
+    // Boutons de l'éditeur Python
+    document.getElementById('savePythonCode')?.addEventListener('click', savePythonCode);
+    document.getElementById('compilePythonCode')?.addEventListener('click', compilePythonCode);
+
+    // Afficher la page par défaut (selon l'URL)
+    const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'editor';
+    showPage(currentPage);
+});
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Créateur de Mods Minecraft</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <!-- Overlay -->
+    <div id="overlay" class="overlay"></div>
+
+    <!-- Éditeur Python flottant -->
+    <div id="pythonEditorContainer" class="python-editor-container">
+        <div class="python-editor-header">
+            <h2>Éditeur Python <span class="close-editor" onclick="closePythonEditor()">&times;</span></h2>
+        </div>
+        <div class="python-editor-body">
+            <textarea id="pythonEditor"></textarea>
+        </div>
+        <div class="python-editor-actions">
+            <button id="savePythonCode" class="btn"><i class="fas fa-save"></i> Sauvegarder</button>
+            <button id="compilePythonCode" class="btn"><i class="fas fa-cogs"></i> Compiler en .jar</button>
+            <button id="closePythonEditor" class="btn"><i class="fas fa-times"></i> Fermer</button>
+        </div>
+    </div>
+
+    <!-- Barre latérale -->
+    <div class="sidebar">
+        <button class="sidebar-btn" onclick="showPage('editor')">
+            <i class="fas fa-code"></i> Code
+        </button>
+        <button class="sidebar-btn" onclick="showPage('import')">
+            <i class="fas fa-upload"></i> Importer
+        </button>
+        <button class="sidebar-btn" onclick="openPythonEditor()">
+            <i class="fas fa-file-code"></i> Éditeur Python
+        </button>
+    </div>
+
+    <!-- Conteneur de la page d'accueil -->
+    <div id="home" class="page-container active">
+        <div class="hero">
+            <h1>Crée et importe tes mods Minecraft facilement</h1>
+            <p>
+                Bienvenue sur le créateur de mods ultime pour Minecraft.
+                Code en Python, importe depuis ta clé USB ou Internet,
+                et personnalise ton expérience de jeu comme jamais !
+            </p>
+            <div class="cta-buttons">
+                <button class="btn" onclick="showPage('editor')">Coder un mod <i class="fas fa-code"></i></button>
+                <button class="btn" onclick="showPage('import')">Importer un mod <i class="fas fa-upload"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteneur pour l'éditeur (caché par défaut) -->
+    <div id="editor" class="page-container">
+        <h1>Éditeur de Code Java</h1>
+        <div class="editor-container">
+            <textarea id="codeEditor"></textarea>
+        </div>
+        <div class="editor-actions">
+            <button id="saveCode" class="btn"><i class="fas fa-save"></i> Sauvegarder</button>
+            <button id="downloadCode" class="btn"><i class="fas fa-download"></i> Télécharger</button>
+        </div>
+    </div>
+
+    <!-- Conteneur pour l'importation (caché par défaut) -->
+    <div id="import" class="page-container">
+        <h1>Importer un Mod</h1>
+        <div class="import-container">
+            <div class="upload-area" id="dropArea">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Glisse-dépose un fichier ici ou clique pour parcourir</p>
+                <input type="file" id="fileInput" accept=".py,.jar,.zip">
+            </div>
+            <div id="filePreview" class="file-preview hidden">
+                <h3>Fichier sélectionné : <span id="fileName"></span></h3>
+                <p>Taille : <span id="fileSize"></span></p>
+                <div id="fileContent" class="preview-content"></div>
+                <button id="importBtn" class="btn"><i class="fas fa-check"></i> Valider l'importation</button>
+            </div>
+            <div id="validationReport" class="validation-report hidden"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
+    <script src="script.js"></script>
+    <script src="editor-script.js"></script>
+    <script src="import-script.js"></script>
+</body>
+</html>
