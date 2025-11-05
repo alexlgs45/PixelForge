@@ -953,3 +953,180 @@ function compileWithGradle() { ... }
 app.listen(port, () => {
     console.log(`Serveur démarré sur http://localhost:${port}`);
 });
+<div class="sidebar">
+    <button class="sidebar-btn" onclick="loadPage('editor')">
+        <i class="fas fa-code"></i> Code
+    </button>
+    <button class="sidebar-btn" onclick="loadPage('import')">
+        <i class="fas fa-upload"></i> Importer
+    </button>
+    <!-- NOUVEAU BOUTON -->
+    <button class="sidebar-btn" id="openPythonEditorBtn">
+        <i class="fas fa-file-code"></i> Éditeur Python
+    </button>
+</div>
+<!-- Conteneur pour l'éditeur Python (masqué par défaut) -->
+<div id="pythonEditorContainer" class="python-editor-container hidden">
+    <div class="python-editor-header">
+        <h2>Éditeur Python <span class="close-editor" onclick="closePythonEditor()">&times;</span></h2>
+    </div>
+    <div class="python-editor-body">
+        <textarea id="pythonEditor"></textarea>
+    </div>
+    <div class="python-editor-actions">
+        <button id="savePythonCode" class="btn"><i class="fas fa-save"></i> Sauvegarder</button>
+        <button id="compilePythonCode" class="btn"><i class="fas fa-cogs"></i> Compiler en .jar</button>
+        <button id="closePythonEditor" class="btn"><i class="fas fa-times"></i> Fermer</button>
+    </div>
+</div>
+/* Éditeur Python flottant */
+.python-editor-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 800px;
+    background: #282a36;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: none; /* Masqué par défaut */
+}
+
+.python-editor-container.hidden {
+    display: none;
+}
+
+.python-editor-header {
+    padding: 15px;
+    border-bottom: 1px solid #444;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.python-editor-header h2 {
+    margin: 0;
+    font-size: 1.5em;
+}
+
+.close-editor {
+    cursor: pointer;
+    font-size: 1.5em;
+}
+
+.python-editor-body {
+    padding: 15px;
+    height: 400px;
+}
+
+.python-editor-body #pythonEditor {
+    width: 100%;
+    height: 100%;
+    background: #1e1f29;
+    border: none;
+    border-radius: 5px;
+    padding: 10px;
+    font-family: monospace;
+    color: #f8f8f2;
+    font-size: 14px;
+}
+
+.python-editor-actions {
+    padding: 15px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid #444;
+}
+// Fonction pour ouvrir l'éditeur Python
+function openPythonEditor() {
+    const container = document.getElementById('pythonEditorContainer');
+    container.classList.remove('hidden');
+
+    // Initialiser CodeMirror si ce n'est pas déjà fait
+    if (!window.pythonEditor) {
+        window.pythonEditor = CodeMirror.fromTextArea(
+            document.getElementById('pythonEditor'), {
+                mode: 'python',
+                theme: 'dracula',
+                lineNumbers: true,
+                autoIndent: true,
+                indentUnit: 4,
+                tabSize: 4,
+            }
+        );
+    }
+
+    // Charger le code sauvegardé (si disponible)
+    const savedCode = localStorage.getItem('pythonModCode');
+    if (savedCode) {
+        window.pythonEditor.setValue(savedCode);
+    }
+}
+
+// Fonction pour fermer l'éditeur Python
+function closePythonEditor() {
+    document.getElementById('pythonEditorContainer').classList.add('hidden');
+}
+
+// Écouteur d'événement pour le bouton d'ouverture
+document.addEventListener('DOMContentLoaded', () => {
+    const openBtn = document.getElementById('openPythonEditorBtn');
+    if (openBtn) {
+        openBtn.addEventListener('click', openPythonEditor);
+    }
+
+    const closeBtn = document.getElementById('closePythonEditor');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closePythonEditor);
+    }
+
+    // Sauvegarder le code Python
+    const savePythonBtn = document.getElementById('savePythonCode');
+    if (savePythonBtn) {
+        savePythonBtn.addEventListener('click', () => {
+            const code = window.pythonEditor.getValue();
+            localStorage.setItem('pythonModCode', code);
+            alert('Code Python sauvegardé !');
+        });
+    }
+
+    // Compiler le code Python (à lier au backend plus tard)
+    const compilePythonBtn = document.getElementById('compilePythonCode');
+    if (compilePythonBtn) {
+        compilePythonBtn.addEventListener('click', async () => {
+            const code = window.pythonEditor.getValue();
+            if (!code.trim()) {
+                alert("Veuillez écrire du code avant de compiler.");
+                return;
+            }
+
+            document.getElementById('status').textContent = "Compilation en cours...";
+
+            try {
+                const response = await fetch('http://localhost:3000/compile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code }),
+                });
+
+                if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'mon_mod_1.21.10.jar';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                alert("Mod compilé et téléchargé avec succès !");
+            } catch (error) {
+                alert(`Erreur: ${error.message}`);
+            }
+        });
+    }
+});
