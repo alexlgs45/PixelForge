@@ -466,3 +466,490 @@ app.post('/upload', upload.single('modFile'), (req, res) => {
 app.listen(port, () => {
     console.log(`Serveur démarré sur http://localhost:${port}`);
 });
+const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const AdmZip = require('adm-zip');
+const yaml = require('js-yaml');
+const app = express();
+const port = 3000;
+
+// Configuration du stockage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = 'uploads';
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
+
+// Servir les fichiers statiques
+app.use(express.static('public'));
+
+// Upload de fichier
+app.post('/upload', upload.single('modFile'), (req, res) => {
+    if (!req.file) return res.status(400).send('Aucun fichier uploadé.');
+    res.json({ message: 'Fichier uploadé.', file: req.file });
+});
+
+// Validation du mod
+app.post('/validate', upload.single('modFile'), (req, res) => {
+    if (!req.file) return res.status(400).send('Aucun fichier à valider.');
+
+    const filePath = req.file.path;
+    const report = validateMod(filePath);
+    res.json(report);
+});
+
+function validateMod(filePath) {
+    const report = { valid: true, errors: [], warnings: [], metadata: {} };
+
+    try {
+        // 1. Vérifier l'extension
+        if (path.extname(filePath) === '.jar') {
+            validateJar(filePath, report);
+        } else if (path.extname(filePath) === '.py') {
+            validatePython(filePath, report);
+        } else {
+            report.valid = false;
+            report.errors.push('Format de fichier non supporté. Utilisez .jar ou .py.');
+        }
+    } catch (error) {
+        report.valid = false;
+        report.errors.push(`Erreur lors de la validation : ${error.message}`);
+    }
+
+    return report;
+}
+
+function validateJar(filePath, report) {
+    const zip = new AdmZip(filePath);
+    const zipEntries = zip.getEntries();
+
+    // 2. Vérifier la présence de mods.toml (obligatoire pour Forge)
+    const modsToml = zipEntries.find(entry => entry.entryName === 'META-INF/mods.toml');
+    if (!modsToml) {
+        report.valid = false;
+        report.errors.push('Fichier mods.toml manquant dans le .jar (obligatoire pour Forge).');
+        return;
+    }
+
+    // 3. Lire et parser mods.toml
+    try {
+        const content = zip.readAsText(modsToml);
+        const modData = yaml.load(content);
+        report.metadata = modData;
+
+        // 4. Vérifier la version de Minecraft
+        if (!modData.mods || !modData.mods[0]) {
+            report.errors.push('Aucun mod défini dans mods.toml.');
+            report.valid = false;
+            return;
+        }
+
+        const mod = modData.mods[0];
+        if (!mod.version) {
+            report.warnings.push('Version du mod non spécifiée.');
+        }
+
+        // 5. Vérifier la compatibilité avec Forge 1.21.10
+        if (modData.dependencies) {
+            const forgeDep = modData.dependencies.find(dep => dep.modId === 'forge');
+            if (forgeDep && !forgeDep.version.includes('1.21.10')) {
+                report.errors.push(`Ce mod nécessite Forge ${forgeDep.version}, mais ce site supporte uniquement 1.21.10.`);
+                report.valid = false;
+            }
+        }
+    } catch (error) {
+        report.errors.push(`Erreur de lecture de mods.toml : ${error.message}`);
+        report.valid = false;
+    }
+}
+
+function validatePython(filePath, report) {
+    // 1. Lire le fichier Python
+    const code = fs.readFileSync(filePath, 'utf8');
+
+    // 2. Vérifier la présence de décorateurs/classes typiques de Forge
+    if (!code.includes('@Mod(') && !code.includes('class ') && !code.includes('ModInitializer')) {
+        report.warnings.push('Ce fichier Python ne semble pas être un mod Minecraft valide (manque @Mod ou ModInitializer).');
+    }
+
+    // 3. Vérifier la version de Minecraft (simulé)
+    if (!code.includes('1.21.10') && !code.includes('1.21')) {
+        report.warnings.push('Aucune référence à Minecraft 1.21.10 trouvée. Vérifiez la compatibilité.');
+    }
+}
+
+app.listen(port, () => {
+    console.log(`Serveur démarré sur http://localhost:${port}`);
+});
+document.addEventListener('DOMContentLoaded', () => {
+    const dropArea = document.getElementById('dropArea');
+    const fileInput = document.getElementById('fileInput');
+    const importBtn = document.getElementById('importBtn');
+    const validationReport = document.getElementById('validationReport');
+
+    // Gestion du glissé-déposé et de la sélection de fichier
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight() {
+        dropArea.style.borderColor = '#6c5ce7';
+    }
+
+    function unhighlight() {
+        dropArea.style.borderColor = '#a29bfe';
+    }
+
+    dropArea.addEventListener('drop', handleDrop, false);
+    fileInput.addEventListener('change', handleFiles);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles({ target: { files } });
+    }
+
+    function handleFiles(e) {
+        const files = e.target.files;
+        displayFileInfo(files[0]);
+    }
+
+    function displayFileInfo(file) {
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const filePreview = document.getElementById('filePreview');
+
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        filePreview.classList.remove('hidden');
+
+        // Lire et afficher un aperçu (pour les fichiers texte)
+        if (file.type.startsWith('text/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('fileContent').textContent = e.target.result.substring(0, 1000) + (e.target.result.length > 1000 ? '...' : '');
+            };
+            reader.readAsText(file);
+        }
+    }
+
+    // Validation du mod
+    importBtn.addEventListener('click', async () => {
+        const fileInput = document.getElementById('fileInput');
+        if (!fileInput.files.length) {
+            alert('Veuillez sélectionner un fichier.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('modFile', fileInput.files[0]);
+
+        try {
+            const response = await fetch('http://localhost:3000/validate', {
+                method: 'POST',
+                body: formData
+            });
+
+            const report = await response.json();
+            displayValidationReport(report);
+        } catch (error) {
+            console.error('Erreur:', error);
+            validationReport.innerHTML = `<div class="error">Erreur lors de la validation : ${error.message}</div>`;
+        }
+    });
+
+    function displayValidationReport(report) {
+        let html = `<h3>Rapport de validation</h3>`;
+        html += `<p>Statut : <strong>${report.valid ? '✅ Valide' : '❌ Invalide'}</strong></p>`;
+
+        if (report.errors.length > 0) {
+            html += `<div class="error-section"><h4>Erreurs :</h4><ul>`;
+            report.errors.forEach(error => {
+                html += `<li>${error}</li>`;
+            });
+            html += `</ul></div>`;
+        }
+
+        if (report.warnings.length > 0) {
+            html += `<div class="warning-section"><h4>Avertissements :</h4><ul>`;
+            report.warnings.forEach(warning => {
+                html += `<li>${warning}</li>`;
+            });
+            html += `</ul></div>`;
+        }
+
+        if (report.metadata.mods) {
+            html += `<div class="metadata-section"><h4>Métadonnées :</h4><pre>${JSON.stringify(report.metadata, null, 2)}</pre></div>`;
+        }
+
+        validationReport.innerHTML = html;
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' octets';
+        else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' Ko';
+        else return (bytes / 1048576).toFixed(2) + ' Mo';
+    }
+});
+<!-- Dans import.html, ajoutez ceci dans le main-content, après filePreview -->
+<div id="validationReport" class="validation-report hidden"></div>
+.validation-report {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 5px;
+}
+
+.error-section {
+    color: #d63031;
+    background: rgba(214, 48, 49, 0.1);
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.warning-section {
+    color: #fdcb6e;
+    background: rgba(253, 203, 110, 0.1);
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.metadata-section {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.metadata-section pre {
+    background: #1e1f29;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+}
+const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const ejs = require('ejs');
+const { exec } = require('child_process');
+const app = express();
+const port = 3000;
+
+// Middleware
+app.use(express.json());
+app.use(express.static('public'));
+
+// Route pour compiler du Python en .jar
+app.post('/compile', async (req, res) => {
+    const { code } = req.body;
+    if (!code) return res.status(400).send('Aucun code fourni.');
+
+    try {
+        // 1. Générer le code Java à partir du template
+        const javaCode = await generateJavaFromPython(code);
+
+        // 2. Écrire les fichiers nécessaires pour Forge
+        setupForgeProject(javaCode);
+
+        // 3. Compiler avec Docker/Gradle
+        const jarPath = await compileWithGradle();
+
+        // 4. Lire le .jar et l'envoyer
+        const jarBuffer = fs.readFileSync(jarPath);
+        res.set('Content-Type', 'application/java-archive');
+        res.send(jarBuffer);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send(`Erreur de compilation : ${error.message}`);
+    }
+});
+
+// Génère du Java à partir du Python (simplifié)
+async function generateJavaFromPython(pythonCode) {
+    // Template EJS pour un mod Forge basique
+    const template = `
+    package com.monmod;
+
+    import net.minecraftforge.fml.common.Mod;
+    import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+    import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+    import org.apache.logging.log4j.LogManager;
+    import org.apache.logging.log4j.Logger;
+
+    @Mod("monmod")
+    public class MonMod {
+        private static final Logger LOGGER = LogManager.getLogger();
+
+        public MonMod() {
+            FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
+        }
+
+        private void setup(final FMLCommonSetupEvent event) {
+            LOGGER.info("Mon mod est chargé !");
+            //=== CODE PYTHON TRANSFORME ===//
+            <% if (code.includes('on_block_break')) { %>
+            // Exemple : Gestion de la casse de bloc
+            event.enqueueWork(() -> {
+                LOGGER.info("Fonction on_block_break activée !");
+                // Ici, tu ajouterais la logique pour gérer la casse de bloc
+            });
+            <% } %>
+            //=== FIN CODE PYTHON ===//
+        }
+    }
+    `;
+
+    return ejs.render(template, { code: pythonCode });
+}
+
+// Prépare la structure du projet Forge
+function setupForgeProject(javaCode) {
+    const projectDir = 'temp_forge_project';
+    if (!fs.existsSync(projectDir)) fs.mkdirSync(projectDir);
+
+    // Écrire le code Java
+    const javaDir = path.join(projectDir, 'src/main/java/com/monmod');
+    if (!fs.existsSync(javaDir)) fs.mkdirSync(javaDir, { recursive: true });
+    fs.writeFileSync(path.join(javaDir, 'MonMod.java'), javaCode);
+
+    // Écrire build.gradle pour Forge 1.21.10
+    const gradleContent = `
+    plugins {
+        id 'java'
+        id 'net.minecraftforge.gradle' version '6.0.+'
+    }
+    version = '1.0'
+    group = 'com.monmod'
+    archivesBaseName = 'monmod'
+
+    repositories {
+        maven { url 'https://maven.minecraftforge.net' }
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation fg.deobf("net.minecraftforge:forge:1.21.10-47.1.0")
+    }
+
+    java {
+        toolchain.languageVersion = JavaLanguageVersion.of(17)
+    }
+    `;
+    fs.writeFileSync(path.join(projectDir, 'build.gradle'), gradleContent);
+}
+
+// Compile avec Docker/Gradle
+function compileWithGradle() {
+    return new Promise((resolve, reject) => {
+        exec('docker run --rm -v "$(pwd)/temp_forge_project":/app -w /app openjdk:17-jdk-slim sh -c "chmod +x gradlew && ./gradlew build"',
+            (error, stdout, stderr) => {
+                if (error) {
+                    reject(new Error(`Erreur de compilation: ${stderr}`));
+                    return;
+                }
+                const jarPath = path.join('temp_forge_project', 'build', 'libs', 'monmod-1.0.jar');
+                if (!fs.existsSync(jarPath)) {
+                    reject(new Error('Aucun .jar généré. Vérifie les logs de compilation.'));
+                    return;
+                }
+                resolve(jarPath);
+            });
+    });
+}
+
+app.listen(port, () => {
+    console.log(`Serveur démarré sur http://localhost:${port}`);
+});
+// Dans editor-script.js, ajoute ceci à la fin :
+document.getElementById('compileToJar').addEventListener('click', async () => {
+    const code = editor.getValue();
+    if (!code.trim()) {
+        alert("Veuillez écrire du code avant de compiler.");
+        return;
+    }
+
+    document.getElementById('status').textContent = "Compilation en cours...";
+
+    try {
+        const response = await fetch('http://localhost:3000/compile', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ code }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'mon_mod_1.21.10.jar';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        document.getElementById('status').textContent = "Mod compilé et téléchargé !";
+    } catch (error) {
+        document.getElementById('status').textContent = `Erreur: ${error.message}`;
+    }
+});
+// 1. Imports et configuration commune
+const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const app = express();
+const port = 3000;
+
+// 2. Middleware (commun aux deux backends)
+app.use(express.json());
+app.use(express.static('public'));
+
+// 3. Configuration de Multer (pour l'upload)
+const storage = multer.diskStorage({ ... });
+const upload = multer({ storage: storage });
+
+// 4. Routes de l'ancien backend (upload/validation)
+app.post('/upload', upload.single('modFile'), (req, res) => { ... });
+app.post('/validate', upload.single('modFile'), (req, res) => { ... });
+
+// 5. Routes du nouveau backend (compilation Python→Java)
+app.post('/compile', express.json(), async (req, res) => { ... });
+
+// 6. Fonctions utilitaires (pour la compilation)
+async function generateJavaFromPython(pythonCode) { ... }
+function setupForgeProject(javaCode) { ... }
+function compileWithGradle() { ... }
+
+// 7. Démarrage du serveur
+app.listen(port, () => {
+    console.log(`Serveur démarré sur http://localhost:${port}`);
+});
